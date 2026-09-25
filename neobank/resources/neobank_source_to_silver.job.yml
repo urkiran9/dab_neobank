@@ -1,0 +1,49 @@
+resources:
+  jobs:
+    neobank_source_to_silver:
+      name: NeoBank_Source_to_Silver
+      tasks:
+        - task_key: Get_List_of_Tables
+          disabled: false
+          email_notifications: {}
+          notebook_task:
+            notebook_path: ../src/neobank_source_to_silver/01_Read_Tables_List.py
+            source: WORKSPACE
+          run_if: ALL_SUCCESS
+          timeout_seconds: 0
+          webhook_notifications: {}
+        - task_key: Ingest_Data_from_Source_to_Silver
+          depends_on:
+            - task_key: Get_List_of_Tables
+          disabled: false
+          email_notifications: {}
+          for_each_task:
+            concurrency: 4
+            inputs: '{{tasks.Get_List_of_Tables.values.tables_metadata}}'
+            task:
+              disabled: false
+              email_notifications: {}
+              run_if: ALL_SUCCESS
+              run_job_task:
+                job_id: 938138114012798
+                job_parameters:
+                  table_metadata: '{{input}}'
+              task_key: Ingest_Data_from_Source_to_Silver_iteration
+              timeout_seconds: 0
+              webhook_notifications: {}
+          run_if: ALL_SUCCESS
+          timeout_seconds: 0
+          webhook_notifications: {}
+      parameters:
+        - name: run_id
+          default: "12345"
+        - name: source_system
+          default: blob
+      email_notifications:
+        no_alert_for_skipped_runs: false
+      max_concurrent_runs: 1
+      performance_target: PERFORMANCE_OPTIMIZED
+      queue:
+        enabled: true
+      timeout_seconds: 0
+      webhook_notifications: {}
