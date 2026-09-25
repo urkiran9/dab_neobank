@@ -1,0 +1,62 @@
+resources:
+  jobs:
+    neobank_master_job:
+      name: NeoBank_Master_Job
+      tasks:
+        - task_key: Source_to_Silver_BLOB
+          disabled: false
+          email_notifications: {}
+          run_if: ALL_SUCCESS
+          run_job_task:
+            job_id: 325194016682281
+            job_parameters:
+              run_id: '{{job.run_id}}'
+              source_system: blob
+          timeout_seconds: 0
+          webhook_notifications: {}
+        - task_key: Source_to_Silver_SQLSERVER
+          disabled: false
+          email_notifications: {}
+          run_if: ALL_SUCCESS
+          run_job_task:
+            job_id: 325194016682281
+            job_parameters:
+              run_id: '{{job.run_id}}'
+              source_system: sqlserver
+          timeout_seconds: 0
+          webhook_notifications: {}
+        - task_key: Silver_to_Gold
+          depends_on:
+            - task_key: Source_to_Silver_SQLSERVER
+            - task_key: Source_to_Silver_BLOB
+          disabled: false
+          email_notifications: {}
+          run_if: ALL_DONE
+          run_job_task:
+            job_id: 179361854905975
+            job_parameters:
+              run_id: '{{job.run_id}}'
+              source_system: silver
+          timeout_seconds: 0
+          webhook_notifications: {}
+        - task_key: Send_Email
+          depends_on:
+            - task_key: Silver_to_Gold
+          disabled: false
+          email_notifications: {}
+          notebook_task:
+            base_parameters:
+              run_id: '{{job.run_id}}'
+            notebook_path: ../src/neobank_master_job/01_Send_Email.py
+            source: WORKSPACE
+          run_if: ALL_DONE
+          timeout_seconds: 0
+          webhook_notifications: {}
+      email_notifications:
+        no_alert_for_skipped_runs: false
+      max_concurrent_runs: 1
+      performance_target: PERFORMANCE_OPTIMIZED
+      queue:
+        enabled: true
+      timeout_seconds: 0
+      webhook_notifications: {}
